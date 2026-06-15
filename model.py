@@ -9,7 +9,6 @@ import pickle
 import os
 
 def detect_target_column(df):
-    """Auto-detect the most likely target column"""
     priority_keywords = [
         'attrition', 'churn', 'default', 'fraud', 'target',
         'label', 'outcome', 'risk', 'leave', 'exit', 'status'
@@ -19,14 +18,12 @@ def detect_target_column(df):
         for col_lower, col_original in cols_lower.items():
             if keyword in col_lower:
                 return col_original
-    # fallback: last column
     return df.columns[-1]
 
 def auto_preprocess(df, target_col):
-    """Auto preprocess any dataframe"""
     df = df.copy()
 
-    # Drop useless columns (all same value, or ID-like)
+    # Drop useless columns
     drop_cols = []
     for col in df.columns:
         if col == target_col:
@@ -37,18 +34,27 @@ def auto_preprocess(df, target_col):
             drop_cols.append(col)
     df = df.drop(columns=drop_cols)
 
-    # Fill missing values
+    # Fill missing values safely
     for col in df.columns:
-        if df[col].dtype == object:
-            df[col] = df[col].fillna(df[col].mode()[0] if not df[col].mode().empty else 'Unknown')
-        else:
-            df[col] = df[col].fillna(df[col].median())
+        if col == target_col:
+            continue
+        try:
+            if df[col].dtype == object or str(df[col].dtype) == 'string':
+                df[col] = df[col].fillna(
+                    df[col].mode()[0] if not df[col].mode().empty else 'Unknown'
+                )
+            elif pd.api.types.is_numeric_dtype(df[col]):
+                df[col] = df[col].fillna(df[col].median())
+            else:
+                df[col] = df[col].fillna('Unknown')
+        except:
+            df[col] = df[col].fillna('Unknown')
 
     # Encode target column
     target_encoder = LabelEncoder()
     df[target_col] = target_encoder.fit_transform(df[target_col].astype(str))
 
-    # Encode categorical columns
+    # Encode all remaining categorical columns
     encoders = {}
     cat_cols = df.select_dtypes(include='object').columns.tolist()
     for col in cat_cols:
@@ -59,7 +65,6 @@ def auto_preprocess(df, target_col):
     return df, encoders, target_encoder, drop_cols
 
 def train_on_any_dataset(df, target_col):
-    """Train XGBoost on any dataset"""
     df_processed, encoders, target_encoder, drop_cols = auto_preprocess(df, target_col)
 
     X = df_processed.drop(columns=[target_col])
@@ -69,7 +74,7 @@ def train_on_any_dataset(df, target_col):
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    # Apply SMOTE only if imbalanced
+    # Apply SMOTE only if enough samples
     min_class = y_train.value_counts().min()
     if min_class >= 6:
         sm = SMOTE(random_state=42)
