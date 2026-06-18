@@ -8,7 +8,7 @@ from predict import predict_single, predict_bulk
 from utils import generate_excel_report
 
 st.set_page_config(
-    page_title="Employee Burnout & Attrition Risk Predictor",
+    page_title="Employee Attrition Risk Predictor",
     page_icon="👥",
     layout="wide"
 )
@@ -48,24 +48,69 @@ st.markdown("""
         font-size: 0.9rem;
         color: #000000;
     }
+    .metric-box {
+        background: #f0f4ff;
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">👥 Employee Burnout & Attrition Risk Predictor</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">Universal HR Intelligence Tool — Works for any industry, any company</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">👥 Employee Attrition Risk Predictor</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Powered by XGBoost + OneHotEncoding + SHAP Explainability | IBM HR Analytics Dataset</div>', unsafe_allow_html=True)
 st.markdown("---")
 
-# ===================== TRAIN MODEL =====================
+# ===================== LOAD MODEL =====================
 @st.cache_resource
 def get_model():
-    import pandas as pd
-    df = pd.read_csv('WA_Fn-UseC_-HR-Employee-Attrition.csv')
-    return train_model(df, target_col='Attrition')
+    return train_model('WA_Fn-UseC_-HR-Employee-Attrition.csv')
 
-with st.spinner("Loading AI model..."):
+with st.spinner("Loading and training model..."):
     model_data = get_model()
 
-st.success(f"✅ Model Ready | Accuracy: {model_data['accuracy']*100:.1f}% | AUC: {model_data['auc']:.2f}")
+# ===================== MODEL METRICS =====================
+metrics = model_data['metrics']
+cv = model_data['cv_results']
+imbalance = model_data['imbalance_results']
+
+with st.expander("📊 Model Performance Metrics", expanded=False):
+    st.markdown("#### Test Set Metrics")
+    m1, m2, m3, m4, m5 = st.columns(5)
+    m1.metric("Accuracy", f"{metrics['accuracy']*100:.1f}%")
+    m2.metric("Precision", f"{metrics['precision']:.3f}")
+    m3.metric("Recall", f"{metrics['recall']:.3f}")
+    m4.metric("ROC-AUC", f"{metrics['roc_auc']:.3f}")
+    m5.metric("PR-AUC", f"{metrics['pr_auc']:.3f}")
+
+    st.markdown("#### Stratified 5-Fold Cross Validation")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("CV F1", f"{cv['f1']:.3f}")
+    c2.metric("CV Recall", f"{cv['recall']:.3f}")
+    c3.metric("CV Precision", f"{cv['precision']:.3f}")
+    c4.metric("CV ROC-AUC", f"{cv['roc_auc']:.3f}")
+
+    st.markdown("#### Confusion Matrix")
+    cm = metrics['confusion_matrix']
+    fig_cm = go.Figure(data=go.Heatmap(
+        z=cm,
+        x=['Predicted: No', 'Predicted: Yes'],
+        y=['Actual: No', 'Actual: Yes'],
+        colorscale='Blues',
+        text=cm,
+        texttemplate="%{text}",
+        showscale=False
+    ))
+    fig_cm.update_layout(height=300, margin=dict(t=20, b=20))
+    st.plotly_chart(fig_cm, use_container_width=True)
+
+    st.markdown("#### Imbalance Handling Comparison")
+    imb_df = pd.DataFrame(imbalance).T.reset_index()
+    imb_df.columns = ['Method', 'F1 Score', 'Recall']
+    imb_df = imb_df.sort_values('F1 Score', ascending=False)
+    st.dataframe(imb_df, use_container_width=True)
+    st.success(f"✅ Best Method Selected: **{model_data['best_sampler']}**")
+
 st.markdown("---")
 
 tab1, tab2 = st.tabs(["🔍 Single Employee Prediction", "📂 Bulk Prediction (Upload CSV)"])
@@ -73,7 +118,7 @@ tab1, tab2 = st.tabs(["🔍 Single Employee Prediction", "📂 Bulk Prediction (
 # ===================== TAB 1: SINGLE =====================
 with tab1:
     st.subheader("Enter Employee Details")
-    st.info("Fill in the details below for any employee — works for any industry!")
+    st.info("Fill in the details below to predict attrition risk for a single employee.")
 
     col1, col2, col3 = st.columns(3)
 
@@ -82,26 +127,38 @@ with tab1:
         age = st.slider("Age", 18, 65, 30)
         gender = st.selectbox("Gender", ["Male", "Female"])
         marital_status = st.selectbox("Marital Status", ["Single", "Married", "Divorced"])
-        distance = st.slider("Distance from Home (km)", 1, 100, 10)
-        num_companies = st.slider("Number of Companies Worked At", 0, 20, 2)
+        distance = st.slider("Distance from Home (km)", 1, 30, 10)
+        num_companies = st.slider("Number of Companies Worked", 0, 9, 2)
 
     with col2:
         st.markdown("**💼 Job Info**")
-        department = st.text_input("Department", placeholder="e.g. Sales, Nursing, Teaching")
-        job_role = st.text_input("Job Role", placeholder="e.g. Manager, Doctor, Engineer")
+        department = st.selectbox("Department", [
+            "Sales", "Research & Development", "Human Resources"
+        ])
+        job_role = st.selectbox("Job Role", [
+            "Sales Executive", "Research Scientist", "Laboratory Technician",
+            "Manufacturing Director", "Healthcare Representative", "Manager",
+            "Sales Representative", "Research Director", "Human Resources"
+        ])
         job_level = st.selectbox("Job Level", [1, 2, 3, 4, 5],
                                   format_func=lambda x: {1:"Entry",2:"Junior",3:"Mid",4:"Senior",5:"Executive"}[x])
         business_travel = st.selectbox("Business Travel", ["Non-Travel", "Travel_Rarely", "Travel_Frequently"])
         overtime = st.selectbox("Works Overtime?", ["Yes", "No"])
+        education_field = st.selectbox("Education Field", [
+            "Life Sciences", "Medical", "Marketing",
+            "Technical Degree", "Human Resources", "Other"
+        ])
 
     with col3:
         st.markdown("**💰 Compensation & Experience**")
-        monthly_income = st.number_input("Monthly Income (₹/$)", 1000, 500000, 50000, step=1000)
-        percent_hike = st.slider("Salary Hike Last Year (%)", 0, 50, 10)
-        total_working_years = st.slider("Total Working Years", 0, 45, 8)
-        years_at_company = st.slider("Years at Current Company", 0, 45, 4)
-        years_in_role = st.slider("Years in Current Role", 0, 25, 3)
-        years_since_promo = st.slider("Years Since Last Promotion", 0, 20, 2)
+        monthly_income = st.number_input("Monthly Income ($)", 1000, 20000, 5000, step=500)
+        percent_hike = st.slider("Salary Hike Last Year (%)", 1, 25, 12)
+        stock_option = st.selectbox("Stock Option Level", [0, 1, 2, 3])
+        total_working_years = st.slider("Total Working Years", 0, 40, 8)
+        years_at_company = st.slider("Years at Company", 0, 40, 5)
+        years_in_role = st.slider("Years in Current Role", 0, 20, 3)
+        years_since_promo = st.slider("Years Since Last Promotion", 0, 15, 2)
+        training_times = st.slider("Training Times Last Year", 0, 6, 2)
 
     st.markdown("**⭐ Satisfaction Ratings**")
     r1, r2, r3, r4, r5 = st.columns(5)
@@ -116,32 +173,26 @@ with tab1:
     with r5:
         job_involvement = st.slider("Job Involvement", 1, 4, 3)
 
-    training_times = st.slider("Training Sessions Last Year", 0, 10, 2)
+    daily_rate = st.slider("Daily Rate", 100, 1500, 800)
+    hourly_rate = st.slider("Hourly Rate", 30, 100, 65)
+    monthly_rate = st.slider("Monthly Rate", 2000, 27000, 14000)
 
-    if st.button("🔮 Predict Burnout & Attrition Risk", type="primary", use_container_width=True):
+    if st.button("🔮 Predict Attrition Risk", type="primary", use_container_width=True):
         input_data = {
-            'Age': age,
-            'Gender': gender,
-            'MaritalStatus': marital_status,
-            'DistanceFromHome': distance,
-            'Department': department if department else 'Unknown',
-            'JobRole': job_role if job_role else 'Unknown',
-            'JobLevel': job_level,
-            'JobSatisfaction': job_satisfaction,
-            'OverTime': overtime,
-            'MonthlyIncome': monthly_income,
-            'PercentSalaryHike': percent_hike,
-            'TotalWorkingYears': total_working_years,
-            'YearsAtCompany': years_at_company,
-            'YearsInCurrentRole': years_in_role,
-            'YearsSinceLastPromotion': years_since_promo,
-            'WorkLifeBalance': work_life_balance,
-            'JobInvolvement': job_involvement,
-            'EnvironmentSatisfaction': env_satisfaction,
-            'RelationshipSatisfaction': relationship_satisfaction,
-            'NumCompaniesWorked': num_companies,
-            'TrainingTimesLastYear': training_times,
-            'BusinessTravel': business_travel
+            'Age': age, 'BusinessTravel': business_travel,
+            'DailyRate': daily_rate, 'Department': department,
+            'DistanceFromHome': distance, 'EducationField': education_field,
+            'EnvironmentSatisfaction': env_satisfaction, 'Gender': gender,
+            'HourlyRate': hourly_rate, 'JobInvolvement': job_involvement,
+            'JobLevel': job_level, 'JobRole': job_role,
+            'JobSatisfaction': job_satisfaction, 'MaritalStatus': marital_status,
+            'MonthlyIncome': monthly_income, 'MonthlyRate': monthly_rate,
+            'NumCompaniesWorked': num_companies, 'OverTime': overtime,
+            'PercentSalaryHike': percent_hike, 'RelationshipSatisfaction': relationship_satisfaction,
+            'StockOptionLevel': stock_option, 'TotalWorkingYears': total_working_years,
+            'TrainingTimesLastYear': training_times, 'WorkLifeBalance': work_life_balance,
+            'YearsAtCompany': years_at_company, 'YearsInCurrentRole': years_in_role,
+            'YearsSinceLastPromotion': years_since_promo
         }
 
         with st.spinner("Analyzing employee profile..."):
@@ -180,12 +231,13 @@ with tab1:
                 for f in factors:
                     direction = "⬆️ Increases risk" if f['impact'] > 0 else "⬇️ Decreases risk"
                     st.markdown(
-                        f'<div class="factor-card"><b>{f["feature"]}</b>: {f["value"]:.1f} — {direction} '
+                        f'<div class="factor-card"><b>{f["feature"]}</b> — {direction} '
                         f'(impact: {f["impact"]:+.3f})</div>',
                         unsafe_allow_html=True
                     )
+            else:
+                st.info("SHAP factors not available.")
 
-            st.markdown("")
             if "High" in risk_label:
                 st.error("⚠️ High Risk! Immediate retention action recommended.")
             elif "Medium" in risk_label:
@@ -195,8 +247,8 @@ with tab1:
 
 # ===================== TAB 2: BULK =====================
 with tab2:
-    st.subheader("Bulk Employee Risk Analysis")
-    st.info("Upload a CSV with employee data. Columns should include: Age, Department, JobRole, JobSatisfaction, OverTime, MonthlyIncome, YearsAtCompany, WorkLifeBalance etc.")
+    st.subheader("Bulk Employee Attrition Analysis")
+    st.info("Upload a CSV with IBM HR dataset columns to score all employees at once.")
 
     uploaded = st.file_uploader("📂 Upload Employee CSV", type=["csv"])
 
@@ -205,7 +257,7 @@ with tab2:
         st.success(f"✅ Loaded {len(df_bulk)} employees")
         st.dataframe(df_bulk.head(5), use_container_width=True)
 
-        if st.button("🚀 Run Bulk Risk Analysis", type="primary", use_container_width=True):
+        if st.button("🚀 Run Bulk Attrition Analysis", type="primary", use_container_width=True):
             with st.spinner("Analyzing all employees..."):
                 probs, labels = predict_bulk(df_bulk, model_data)
 
@@ -236,10 +288,8 @@ with tab2:
 
             with col2:
                 fig_hist = px.histogram(
-                    df_result,
-                    x='Risk Score (%)',
-                    nbins=20,
-                    title="Risk Score Distribution",
+                    df_result, x='Risk Score (%)',
+                    nbins=20, title="Risk Score Distribution",
                     color_discrete_sequence=["#1F3864"]
                 )
                 st.plotly_chart(fig_hist, use_container_width=True)
@@ -254,8 +304,7 @@ with tab2:
             st.download_button(
                 label="📥 Download Excel Report",
                 data=excel_buf,
-                file_name="burnout_risk_report.xlsx",
+                file_name="attrition_risk_report.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
-            
