@@ -99,5 +99,5 @@ employee\_attrition\_risk\_predictor/
 
 ## 👩‍💻 Developed By
 
-Tanishka Pagar — LABTECH Internship 2026
+Tanishka Pagar 
 
