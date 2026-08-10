@@ -12,7 +12,7 @@ from utils import generate_excel_report
 
 st.set_page_config(
     page_title="Employee Attrition Risk Predictor",
-    page_icon="ðŸ‘¥",
+    page_icon="👥",
     layout="wide"
 )
 
@@ -60,7 +60,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">ðŸ‘¥ Employee Attrition Risk Predictor</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">👥 Employee Attrition Risk Predictor</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-title">Powered by XGBoost + OneHotEncoding + SHAP Explainability</div>', unsafe_allow_html=True)
 st.markdown("---")
 
@@ -81,7 +81,7 @@ metrics = model_data['metrics']
 cv = model_data['cv_results']
 imbalance = model_data['imbalance_results']
 
-with st.expander("ðŸ“Š Model Performance Metrics", expanded=False):
+with st.expander("📊 Model Performance Metrics", expanded=False):
     st.markdown("#### Test Set Metrics")
     m1, m2, m3, m4, m5 = st.columns(5)
     m1.metric("Accuracy", f"{metrics['accuracy']*100:.1f}%")
@@ -120,7 +120,7 @@ with st.expander("ðŸ“Š Model Performance Metrics", expanded=False):
 
 st.markdown("---")
 
-tab1, tab2 = st.tabs(["ðŸ” Single Employee Prediction", "ðŸ“‚ Bulk Prediction (Upload CSV)"])
+tab1, tab2 = st.tabs(["🔍 Single Employee Prediction", "📂‚ Bulk Prediction (Upload CSV)"])
 
 # ===================== TAB 1: SINGLE =====================
 with tab1:
@@ -130,7 +130,7 @@ with tab1:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("**ðŸ‘¤ Personal Info**")
+        st.markdown("**👤 Personal Info**")
         age = st.slider("Age", 18, 65, 30)
         gender = st.selectbox("Gender", ["Male", "Female"])
         marital_status = st.selectbox("Marital Status", ["Single", "Married", "Divorced"])
@@ -138,7 +138,7 @@ with tab1:
         num_companies = st.slider("Number of Companies Worked", 0, 9, 2)
 
     with col2:
-        st.markdown("**ðŸ’¼ Job Info**")
+        st.markdown("**💼 Job Info**")
         department = st.selectbox("Department", [
             "Sales", "Research & Development", "Human Resources"
         ])
@@ -167,7 +167,7 @@ with tab1:
         years_since_promo = st.slider("Years Since Last Promotion", 0, 15, 2)
         training_times = st.slider("Training Times Last Year", 0, 6, 2)
 
-    st.markdown("**â­ Satisfaction Ratings**")
+    st.markdown("**⭐ Satisfaction Ratings**")
     r1, r2, r3, r4, r5 = st.columns(5)
     with r1:
         job_satisfaction = st.slider("Job Satisfaction", 1, 4, 3)
@@ -184,7 +184,7 @@ with tab1:
     hourly_rate = st.slider("Hourly Rate", 30, 100, 65)
     monthly_rate = st.slider("Monthly Rate", 2000, 27000, 14000)
 
-    if st.button("ðŸ”® Predict Attrition Risk", type="primary", use_container_width=True):
+    if st.button("🔍 Predict Attrition Risk", type="primary", use_container_width=True):
         input_data = {
             'Age': age, 'BusinessTravel': business_travel,
             'DailyRate': daily_rate, 'Department': department,
@@ -232,13 +232,13 @@ with tab1:
             st.markdown(f'<div class="risk-card {risk_class}">{risk_label}</div>', unsafe_allow_html=True)
 
         with col_res2:
-            st.markdown("#### ðŸ” Top Factors Driving This Prediction")
+            st.markdown("#### 🔍 Top Factors Driving This Prediction")
             st.markdown("*(SHAP-based explainability)*")
             if factors:
                 for f in factors:
-                    direction = "â¬†ï¸ Increases risk" if f['impact'] > 0 else "â¬‡ï¸ Decreases risk"
+                    direction = "⬆️ Increases risk" if f['impact'] > 0 else "⬇️  Decreases risk"
                     st.markdown(
-                        f'<div class="factor-card"><b>{f["feature"]}</b> â€” {direction} '
+                        f'<div class="factor-card"><b>{f["feature"]}</b> — {direction} '
                         f'(impact: {f["impact"]:+.3f})</div>',
                         unsafe_allow_html=True
                     )
@@ -246,42 +246,42 @@ with tab1:
                 st.info("SHAP factors not available.")
 
             if "High" in risk_label:
-                st.error("âš ï¸ High Risk! Immediate retention action recommended.")
+                st.error("⚠️ High Risk! Immediate retention action recommended.")
             elif "Medium" in risk_label:
-                st.warning("ðŸ‘€ Medium Risk. Schedule a check-in with this employee.")
+                st.warning("👀 Medium Risk. Schedule a check-in with this employee.")
             else:
-                st.success("âœ… Low Risk. Employee appears stable and engaged.")
+                st.success("✅ Low Risk. Employee appears stable and engaged.")
 
 # ===================== TAB 2: BULK =====================
 with tab2:
     st.subheader("Bulk Employee Attrition Analysis")
     st.info("Upload a CSV with IBM HR dataset columns to score all employees at once.")
 
-    uploaded = st.file_uploader("ðŸ“‚ Upload Employee CSV", type=["csv"])
+    uploaded = st.file_uploader("📂 Upload Employee CSV", type=["csv"])
 
     if uploaded:
         df_bulk = pd.read_csv(uploaded)
-        st.success(f"âœ… Loaded {len(df_bulk)} employees")
+        st.success(f"✅ Loaded {len(df_bulk)} employees")
         st.dataframe(df_bulk.head(5), use_container_width=True)
 
-        if st.button("ðŸš€ Run Bulk Attrition Analysis", type="primary", use_container_width=True):
-            with st.spinner("Analyzing all employees..."):
-                probs, labels = predict_bulk(df_bulk, model_data)
+        if st.button("🚀 Run Bulk Attrition Analysis", type="primary", use_container_width=True):
+    with st.spinner("Analyzing all employees..."):
+        probs, labels = predict_bulk(df_bulk, model_data)
 
-            df_result = df_bulk.copy()
-            df_result['Risk Score (%)'] = (np.array(probs) * 100).round(1)
-            df_result['Risk Level'] = labels
+        df_result = df_bulk.copy()
+        df_result['Risk Score (%)'] = (np.array(probs) * 100).round(1)
+        df_result['Risk Level'] = labels
 
-            st.markdown("---")
-            low = sum(1 for l in labels if "Low" in l)
-            med = sum(1 for l in labels if "Medium" in l)
-            high = sum(1 for l in labels if "High" in l)
+        st.markdown("---")
+        low = sum(1 for l in labels if "Low" in l)
+        med = sum(1 for l in labels if "Medium" in l)
+        high = sum(1 for l in labels if "High" in l)
 
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Total Employees", len(labels))
-            m2.metric("ðŸŸ¢ Low Risk", low)
-            m3.metric("ðŸŸ¡ Medium Risk", med)
-            m4.metric("ðŸ”´ High Risk", high)
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Total Employees", len(labels))
+        m2.metric("🟢 Low Risk", low)
+        m3.metric("🟡 Medium Risk", med)
+        m4.metric("🔴 High Risk", high)
 
             col1, col2 = st.columns(2)
             with col1:
@@ -294,25 +294,27 @@ with tab2:
                 st.plotly_chart(fig_pie, use_container_width=True)
 
             with col2:
-                fig_hist = px.histogram(
-                    df_result, x='Risk Score (%)',
-                    nbins=20, title="Risk Score Distribution",
-                    color_discrete_sequence=["#1F3864"]
-                )
-                st.plotly_chart(fig_hist, use_container_width=True)
+    fig_hist = px.histogram(
+        df_result,
+        x='Risk Score (%)',
+        nbins=20,
+        title="Risk Score Distribution",
+        color_discrete_sequence=["#1F3864"]
+    )
+    st.plotly_chart(fig_hist, use_container_width=True)
 
-            st.markdown("### ðŸ“‹ Full Results")
-            st.dataframe(
-                df_result.sort_values('Risk Score (%)', ascending=False),
-                use_container_width=True
-            )
+    st.markdown("### 📋 Full Results")
+    st.dataframe(
+        df_result.sort_values('Risk Score (%)', ascending=False),
+        use_container_width=True
+    )
 
-            excel_buf = generate_excel_report(df_bulk, probs, labels)
-            st.download_button(
-                label="ðŸ“¥ Download Excel Report",
-                data=excel_buf,
-                file_name="attrition_risk_report.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
+    excel_buf = generate_excel_report(df_bulk, probs, labels)
+    st.download_button(
+        label="📥 Download Excel Report",
+        data=excel_buf,
+        file_name="attrition_risk_report.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True
+    )
 
