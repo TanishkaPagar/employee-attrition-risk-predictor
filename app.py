@@ -11,7 +11,9 @@ from predict import predict_single, predict_bulk
 from utils import generate_excel_report
 
 
-# ===================== PAGE CONFIG =====================
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
 
 st.set_page_config(
     page_title="Employee Attrition Risk Predictor",
@@ -20,7 +22,9 @@ st.set_page_config(
 )
 
 
-# ===================== CUSTOM CSS =====================
+# ============================================================
+# CUSTOM CSS
+# ============================================================
 
 st.markdown("""
 <style>
@@ -85,7 +89,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ===================== HEADER =====================
+# ============================================================
+# HEADER
+# ============================================================
 
 st.markdown(
     '<div class="main-title">👥 Employee Attrition Risk Predictor</div>',
@@ -100,7 +106,9 @@ st.markdown(
 st.markdown("---")
 
 
-# ===================== LOAD MODEL =====================
+# ============================================================
+# LOAD MODEL
+# ============================================================
 
 @st.cache_resource
 def get_model():
@@ -119,7 +127,9 @@ with st.spinner("Loading model..."):
     model_data = get_model()
 
 
-# ===================== MODEL METRICS =====================
+# ============================================================
+# MODEL METRICS
+# ============================================================
 
 metrics = model_data["metrics"]
 cv = model_data["cv_results"]
@@ -127,6 +137,10 @@ imbalance = model_data["imbalance_results"]
 
 
 with st.expander("📊 Model Performance Metrics", expanded=False):
+
+    # -----------------------------
+    # Test Set Metrics
+    # -----------------------------
 
     st.markdown("#### Test Set Metrics")
 
@@ -158,7 +172,9 @@ with st.expander("📊 Model Performance Metrics", expanded=False):
     )
 
 
-    # ===================== CROSS VALIDATION =====================
+    # -----------------------------
+    # Cross Validation
+    # -----------------------------
 
     st.markdown("#### Stratified 5-Fold Cross Validation")
 
@@ -185,7 +201,9 @@ with st.expander("📊 Model Performance Metrics", expanded=False):
     )
 
 
-    # ===================== CONFUSION MATRIX =====================
+    # -----------------------------
+    # Confusion Matrix
+    # -----------------------------
 
     st.markdown("#### Confusion Matrix")
 
@@ -214,7 +232,9 @@ with st.expander("📊 Model Performance Metrics", expanded=False):
     )
 
 
-    # ===================== IMBALANCE COMPARISON =====================
+    # -----------------------------
+    # Imbalance Handling
+    # -----------------------------
 
     st.markdown("#### Imbalance Handling Comparison")
 
@@ -244,7 +264,9 @@ with st.expander("📊 Model Performance Metrics", expanded=False):
 st.markdown("---")
 
 
-# ===================== TABS =====================
+# ============================================================
+# TABS
+# ============================================================
 
 tab1, tab2 = st.tabs(
     [
@@ -255,7 +277,7 @@ tab1, tab2 = st.tabs(
 
 
 # ============================================================
-# TAB 1: SINGLE EMPLOYEE PREDICTION
+# TAB 1 - SINGLE EMPLOYEE
 # ============================================================
 
 with tab1:
@@ -266,13 +288,12 @@ with tab1:
         "Fill in the details below to predict attrition risk for a single employee."
     )
 
-
-    # ===================== THREE COLUMNS =====================
-
     col1, col2, col3 = st.columns(3)
 
 
-    # ===================== PERSONAL INFO =====================
+    # --------------------------------------------------------
+    # PERSONAL INFORMATION
+    # --------------------------------------------------------
 
     with col1:
 
@@ -310,7 +331,9 @@ with tab1:
         )
 
 
-    # ===================== JOB INFO =====================
+    # --------------------------------------------------------
+    # JOB INFORMATION
+    # --------------------------------------------------------
 
     with col2:
 
@@ -379,7 +402,9 @@ with tab1:
         )
 
 
-    # ===================== COMPENSATION =====================
+    # --------------------------------------------------------
+    # COMPENSATION & EXPERIENCE
+    # --------------------------------------------------------
 
     with col3:
 
@@ -441,15 +466,15 @@ with tab1:
         )
 
 
-    # ===================== SATISFACTION =====================
+    # --------------------------------------------------------
+    # SATISFACTION RATINGS
+    # --------------------------------------------------------
 
     st.markdown("**⭐ Satisfaction Ratings**")
 
     r1, r2, r3, r4, r5 = st.columns(5)
 
-
     with r1:
-
         job_satisfaction = st.slider(
             "Job Satisfaction",
             1,
@@ -457,9 +482,7 @@ with tab1:
             3
         )
 
-
     with r2:
-
         work_life_balance = st.slider(
             "Work-Life Balance",
             1,
@@ -467,9 +490,7 @@ with tab1:
             3
         )
 
-
     with r3:
-
         env_satisfaction = st.slider(
             "Environment Satisfaction",
             1,
@@ -477,9 +498,7 @@ with tab1:
             3
         )
 
-
     with r4:
-
         relationship_satisfaction = st.slider(
             "Relationship Satisfaction",
             1,
@@ -487,9 +506,7 @@ with tab1:
             3
         )
 
-
     with r5:
-
         job_involvement = st.slider(
             "Job Involvement",
             1,
@@ -498,7 +515,9 @@ with tab1:
         )
 
 
-    # ===================== ADDITIONAL FEATURES =====================
+    # --------------------------------------------------------
+    # ADDITIONAL RATES
+    # --------------------------------------------------------
 
     daily_rate = st.slider(
         "Daily Rate",
@@ -522,7 +541,9 @@ with tab1:
     )
 
 
-    # ===================== PREDICTION =====================
+    # --------------------------------------------------------
+    # SINGLE PREDICTION BUTTON
+    # --------------------------------------------------------
 
     if st.button(
         "🔍 Predict Attrition Risk",
@@ -559,7 +580,6 @@ with tab1:
             "YearsAtCompany": years_at_company,
             "YearsInCurrentRole": years_in_role,
             "YearsSinceLastPromotion": years_since_promo
-
         }
 
 
@@ -573,13 +593,12 @@ with tab1:
 
         st.markdown("---")
 
-
-        # ===================== RESULTS =====================
-
         col_res1, col_res2 = st.columns(2)
 
 
-        # ===================== GAUGE =====================
+        # ----------------------------------------------------
+        # RISK GAUGE
+        # ----------------------------------------------------
 
         with col_res1:
 
@@ -591,77 +610,42 @@ with tab1:
                 else "#FF4444"
             )
 
-
             fig = go.Figure(
                 go.Indicator(
-
                     mode="gauge+number",
-
-                    value=round(
-                        prob * 100,
-                        1
-                    ),
-
+                    value=round(prob * 100, 1),
                     title={
                         "text": "Attrition Risk Score",
-                        "font": {
-                            "size": 18
-                        }
+                        "font": {"size": 18}
                     },
-
                     number={
                         "suffix": "%",
-                        "font": {
-                            "size": 36
-                        }
+                        "font": {"size": 36}
                     },
-
                     gauge={
-
                         "axis": {
-                            "range": [
-                                0,
-                                100
-                            ]
+                            "range": [0, 100]
                         },
-
                         "bar": {
                             "color": color
                         },
-
                         "steps": [
-
                             {
-                                "range": [
-                                    0,
-                                    30
-                                ],
+                                "range": [0, 30],
                                 "color": "#d4edda"
                             },
-
                             {
-                                "range": [
-                                    30,
-                                    60
-                                ],
+                                "range": [30, 60],
                                 "color": "#fff3cd"
                             },
-
                             {
-                                "range": [
-                                    60,
-                                    100
-                                ],
+                                "range": [60, 100],
                                 "color": "#f8d7da"
                             }
-
                         ]
-
                     }
-
                 )
             )
-
 
             fig.update_layout(
                 height=300,
@@ -670,7 +654,6 @@ with tab1:
                     b=10
                 )
             )
-
 
             st.plotly_chart(
                 fig,
@@ -686,14 +669,15 @@ with tab1:
                 else "high"
             )
 
-
             st.markdown(
                 f'<div class="risk-card {risk_class}">{risk_label}</div>',
                 unsafe_allow_html=True
             )
 
 
-        # ===================== SHAP EXPLANATION =====================
+        # ----------------------------------------------------
+        # SHAP EXPLANATION
+        # ----------------------------------------------------
 
         with col_res2:
 
@@ -716,14 +700,11 @@ with tab1:
                         else "⬇️ Decreases risk"
                     )
 
-
                     st.markdown(
-
                         f'<div class="factor-card">'
                         f'<b>{f["feature"]}</b> — {direction} '
                         f'(impact: {f["impact"]:+.3f})'
                         f'</div>',
-
                         unsafe_allow_html=True
                     )
 
@@ -734,7 +715,9 @@ with tab1:
                 )
 
 
-            # ===================== RISK MESSAGE =====================
+            # ------------------------------------------------
+            # RISK MESSAGE
+            # ------------------------------------------------
 
             if "High" in risk_label:
 
@@ -756,7 +739,7 @@ with tab1:
 
 
 # ============================================================
-# TAB 2: BULK EMPLOYEE PREDICTION
+# TAB 2 - BULK PREDICTION
 # ============================================================
 
 with tab2:
@@ -770,8 +753,6 @@ with tab2:
     )
 
 
-    # ===================== CSV UPLOAD =====================
-
     uploaded = st.file_uploader(
         "📂 Upload Employee CSV",
         type=["csv"]
@@ -782,11 +763,9 @@ with tab2:
 
         df_bulk = pd.read_csv(uploaded)
 
-
         st.success(
             f"✅ Loaded {len(df_bulk)} employees"
         )
-
 
         st.dataframe(
             df_bulk.head(5),
@@ -794,7 +773,9 @@ with tab2:
         )
 
 
-        # ===================== BULK ANALYSIS BUTTON =====================
+        # ----------------------------------------------------
+        # BULK ANALYSIS BUTTON
+        # ----------------------------------------------------
 
         if st.button(
             "🚀 Run Bulk Attrition Analysis",
@@ -802,11 +783,9 @@ with tab2:
             use_container_width=True
         ):
 
-
             with st.spinner(
                 "Analyzing all employees..."
             ):
-
 
                 probs, labels = predict_bulk(
                     df_bulk,
@@ -814,182 +793,153 @@ with tab2:
                 )
 
 
-                # ===================== RESULTS DATAFRAME =====================
+            # ------------------------------------------------
+            # RESULTS DATAFRAME
+            # ------------------------------------------------
 
-                df_result = df_bulk.copy()
+            df_result = df_bulk.copy()
 
+            df_result["Risk Score (%)"] = (
+                np.array(probs) * 100
+            ).round(1)
 
-                df_result["Risk Score (%)"] = (
-                    np.array(probs) * 100
-                ).round(1)
-
-
-                df_result["Risk Level"] = labels
-
-
-                st.markdown("---")
+            df_result["Risk Level"] = labels
 
 
-                # ===================== RISK COUNTS =====================
+            st.markdown("---")
 
-                low = sum(
-                    1
-                    for l in labels
-                    if "Low" in l
+
+            # ------------------------------------------------
+            # RISK COUNTS
+            # ------------------------------------------------
+
+            low = sum(
+                1 for l in labels
+                if "Low" in l
+            )
+
+            med = sum(
+                1 for l in labels
+                if "Medium" in l
+            )
+
+            high = sum(
+                1 for l in labels
+                if "High" in l
+            )
+
+
+            m1, m2, m3, m4 = st.columns(4)
+
+
+            m1.metric(
+                "Total Employees",
+                len(labels)
+            )
+
+            m2.metric(
+                "🟢 Low Risk",
+                low
+            )
+
+            m3.metric(
+                "🟡 Medium Risk",
+                med
+            )
+
+            m4.metric(
+                "🔴 High Risk",
+                high
+            )
+
+
+            # ------------------------------------------------
+            # CHARTS
+            # ------------------------------------------------
+
+            col1, col2 = st.columns(2)
+
+
+            with col1:
+
+                fig_pie = px.pie(
+                    values=[
+                        low,
+                        med,
+                        high
+                    ],
+                    names=[
+                        "Low Risk",
+                        "Medium Risk",
+                        "High Risk"
+                    ],
+                    color_discrete_sequence=[
+                        "#00C851",
+                        "#FFD700",
+                        "#FF4444"
+                    ],
+                    title="Risk Distribution"
                 )
 
-
-                med = sum(
-                    1
-                    for l in labels
-                    if "Medium" in l
-                )
-
-
-                high = sum(
-                    1
-                    for l in labels
-                    if "High" in l
-                )
-
-
-                # ===================== METRICS =====================
-
-                m1, m2, m3, m4 = st.columns(4)
-
-
-                m1.metric(
-                    "Total Employees",
-                    len(labels)
-                )
-
-
-                m2.metric(
-                    "🟢 Low Risk",
-                    low
-                )
-
-
-                m3.metric(
-                    "🟡 Medium Risk",
-                    med
-                )
-
-
-                m4.metric(
-                    "🔴 High Risk",
-                    high
-                )
-
-
-                # ===================== CHARTS =====================
-
-                col1, col2 = st.columns(2)
-
-
-                # ===================== PIE CHART =====================
-
-                with col1:
-
-                    fig_pie = px.pie(
-
-                        values=[
-                            low,
-                            med,
-                            high
-                        ],
-
-                        names=[
-                            "Low Risk",
-                            "Medium Risk",
-                            "High Risk"
-                        ],
-
-                        color_discrete_sequence=[
-                            "#00C851",
-                            "#FFD700",
-                            "#FF4444"
-                        ],
-
-                        title="Risk Distribution"
-
-                    )
-
-
-                    st.plotly_chart(
-                        fig_pie,
-                        use_container_width=True
-                    )
-
-
-                # ===================== HISTOGRAM =====================
-
-                with col2:
-
-                    fig_hist = px.histogram(
-
-                        df_result,
-
-                        x="Risk Score (%)",
-
-                        nbins=20,
-
-                        title="Risk Score Distribution",
-
-                        color_discrete_sequence=[
-                            "#1F3864"
-                        ]
-
-                    )
-
-
-                    st.plotly_chart(
-                        fig_hist,
-                        use_container_width=True
-                    )
-
-
-                # ===================== FULL RESULTS =====================
-
-                st.markdown(
-                    "### 📋 Full Results"
-                )
-
-
-                st.dataframe(
-
-                    df_result.sort_values(
-                        "Risk Score (%)",
-                        ascending=False
-                    ),
-
+                st.plotly_chart(
+                    fig_pie,
                     use_container_width=True
-
                 )
 
 
-                # ===================== EXCEL REPORT =====================
+            with col2:
 
-                excel_buf = generate_excel_report(
-                    df_bulk,
-                    probs,
-                    labels
+                fig_hist = px.histogram(
+                    df_result,
+                    x="Risk Score (%)",
+                    nbins=20,
+                    title="Risk Score Distribution",
+                    color_discrete_sequence=[
+                        "#1F3864"
+                    ]
                 )
 
-
-                st.download_button(
-
-                    label="📥 Download Excel Report",
-
-                    data=excel_buf,
-
-                    file_name="attrition_risk_report.xlsx",
-
-                    mime=(
-                        "application/vnd.openxmlformats-officedocument."
-                        "spreadsheetml.sheet"
-                    ),
-
+                st.plotly_chart(
+                    fig_hist,
                     use_container_width=True
-
                 )
+
+
+            # ------------------------------------------------
+            # FULL RESULTS
+            # ------------------------------------------------
+
+            st.markdown(
+                "### 📋 Full Results"
+            )
+
+            st.dataframe(
+                df_result.sort_values(
+                    "Risk Score (%)",
+                    ascending=False
+                ),
+                use_container_width=True
+            )
+
+
+            # ------------------------------------------------
+            # EXCEL REPORT
+            # ------------------------------------------------
+
+            excel_buf = generate_excel_report(
+                df_bulk,
+                probs,
+                labels
+            )
+
+
+            st.download_button(
+                label="📥 Download Excel Report",
+                data=excel_buf,
+                file_name="attrition_risk_report.xlsx",
+                mime=(
+                    "application/vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet"
+                ),
+                use_container_width=True
+            )
